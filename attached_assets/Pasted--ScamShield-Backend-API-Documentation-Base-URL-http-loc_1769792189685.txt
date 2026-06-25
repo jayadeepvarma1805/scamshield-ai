@@ -1,0 +1,161 @@
+📘 ScamShield Backend API Documentation
+
+Base URL
+
+http://localhost:4000
+
+
+All POST requests must include:
+
+Content-Type: application/json
+
+🟢 Health Check
+GET /
+Description
+
+Checks whether the backend service is running.
+
+Response
+scamShield service is running
+
+🤖 AI Threat Analysis
+POST /api/ai/analyze-url
+Description
+
+Fetches the given URL, analyzes it with Gemini AI, stores the result in MongoDB, and returns the stored analysis.
+
+📥 Request Body
+Field	Type	Required	Description
+url	string	✅	Website or API endpoint to scan
+prompt	string	✅	Instruction to AI (e.g., "Analyze for phishing")
+📤 Success Response — 200
+{
+  "success": true,
+  "analysis": {
+    "_id": "65fa...",
+    "url": "https://example.com",
+    "riskScore": 14,
+    "threatType": "safe",
+    "summary": "No suspicious behavior detected.",
+    "consequences": [],
+    "indicators": [],
+    "confidence": 0.83,
+    "aiModel": "gemini-1.5-pro",
+    "scannedAt": "2026-01-30T12:00:00Z",
+    "createdAt": "...",
+    "updatedAt": "..."
+  }
+}
+
+❌ Error Responses
+400 – Missing Fields
+{
+  "error": "url and prompt are required"
+}
+
+500 – AI / Fetch Error
+{
+  "error": "AI returned invalid JSON format"
+}
+
+🚨 Scam Reporting (Manual / Human)
+POST /api/report
+Description
+
+Stores a manually reported scam in the database.
+
+📥 Request Body
+Field	Type	Required	Description
+url	string	✅	Scam website
+category	string	❌	phishing / malware / fraud / etc
+riskScore	number	✅	0–100
+aiSummary	string	✅	Explanation
+indicators	array[string]	❌	Evidence
+rawPrompt	string	❌	Prompt used
+📤 Success Response — 201
+{
+  "success": true,
+  "message": "Scam report saved successfully",
+  "report": {
+    "_id": "...",
+    "url": "https://fake-bank.com",
+    "riskScore": 92,
+    "category": "phishing",
+    "status": "open"
+  }
+}
+
+📊 Threat Data Queries
+
+These routes only read data.
+
+GET /api/data/recent
+Description
+
+Returns the most recent scam reports.
+
+Query Params
+Param	Type	Required	Description
+limit	number	❌	Number of records (default 20)
+📤 Response
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "...",
+      "url": "https://bad.com",
+      "category": "fraud",
+      "riskScore": 90,
+      "aiSummary": "...",
+      "createdAt": "..."
+    }
+  ]
+}
+
+GET /api/data/search
+Description
+
+Searches scam database by keyword.
+
+Query Params
+Param	Type	Required	Description
+q	string	✅	Search term
+📤 Response
+{
+  "success": true,
+  "results": [
+    {
+      "_id": "...",
+      "url": "https://crypto-fraud.com",
+      "category": "crypto-scam",
+      "riskScore": 88
+    }
+  ]
+}
+
+GET /api/data/url
+Description
+
+Checks whether a URL already exists in the database.
+
+Query Params
+Param	Type	Required	Description
+value	string	✅	URL to lookup
+📤 Response
+{
+  "success": true,
+  "result": {
+    "_id": "...",
+    "url": "https://fake-bank.com",
+    "riskScore": 92
+  }
+}
+
+📌 Summary of All Routes
+Method	Endpoint	Purpose
+GET	/	health
+POST	/api/ai/analyze-url	AI scan + store
+POST	/api/report	submit report
+GET	/api/data/recent	latest
+GET	/api/data/search	keyword search
+GET	/api/data/url	lookup
